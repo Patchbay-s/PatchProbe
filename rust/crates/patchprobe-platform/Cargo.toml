@@ -1,0 +1,23 @@
+[package]
+name = "patchprobe-platform"
+description = "Couche dépendante de l'OS de PatchProbe (ping, ARP, interface, navigateur…)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+patchprobe-core.workspace = true
+tokio = { workspace = true, features = ["process", "fs"] }
+tokio-util.workspace = true
+async-trait.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+if-addrs = "0.13"
+directories = "6"
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["process", "test-util"] }
+
+[lints]
+workspace = true

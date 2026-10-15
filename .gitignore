@@ -1,0 +1,55 @@
+# --- OS / editors
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# --- Secrets and local configuration (see .env.example)
+.env
+.env.*
+!.env.example
+*.p12
+*.pfx
+*.cer
+*.mobileprovision
+*.provisionprofile
+*.key
+*.pem
+*.keystore
+private_keys/
+
+# --- Rust / Node / Tauri build output
+target/
+node_modules/
+dist/
+rust/app/src-tauri/gen/
+
+# --- Packages and binaries
+*.dmg
+*.pkg
+*.msi
+*.exe
+*.AppImage
+*.deb
+*.rpm
+*.app/
+*.zip
+
+# --- Xcode (legacy Swift app)
+xcuserdata/
+*.xcuserstate
+DerivedData/
+.build/
+
+# --- Scan results and logs (never commit real scans)
+*.log
+scans/
+exports/
+PatchProbe-export-*
+patchprobe-export-*
+
+# --- Local tool settings
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+.claude/worktrees/

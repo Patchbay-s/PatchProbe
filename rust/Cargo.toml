@@ -1,0 +1,41 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/patchprobe-core",
+    "crates/patchprobe-platform",
+    "app/src-tauri",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-only"
+publish = false
+
+[workspace.dependencies]
+patchprobe-core = { path = "crates/patchprobe-core" }
+patchprobe-platform = { path = "crates/patchprobe-platform" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+uuid = { version = "1", features = ["v4", "serde"] }
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "net", "time", "sync", "macros"] }
+tokio-util = "0.7"
+async-trait = "0.1"
+rand = "0.9"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+dns-lookup = "2"
+mdns-sd = "0.13"
+quick-xml = "0.37"
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde", "std"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+cast_possible_truncation = "deny"
+cast_sign_loss = "deny"
+cast_possible_wrap = "deny"

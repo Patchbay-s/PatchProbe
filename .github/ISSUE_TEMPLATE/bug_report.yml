@@ -1,0 +1,74 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! **Please redact real IP addresses, MAC addresses and device
+        names** (use e.g. `192.0.2.10`, `02:00:00:00:00:01`, `printer-01`).
+        Security issues must be reported privately: see SECURITY.md.
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: [macOS, Windows, Linux]
+    validations:
+      required: true
+  - type: input
+    id: os-version
+    attributes:
+      label: OS version and architecture
+      placeholder: "macOS 15.1 (Apple Silicon), Windows 11 23H2 x64, Ubuntu 24.04 x64…"
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: PatchProbe version or commit
+      placeholder: "v0.1.0 or commit sha"
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Host discovery / ping
+        - Port scan
+        - Name resolution
+        - MAC address / vendor
+        - Host details (nmap, UDP, SNMP, traceroute, Wake-on-LAN)
+        - History / site profiles
+        - Export
+        - Installation / build
+        - Other
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Range 192.0.2.0/24, default ports
+        2. Click "Scanner"
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Name diagnostic, logs or screenshots (redacted)
+      description: For name resolution issues, the "Diagnostic du nom" panel output is very helpful.
+  - type: checkboxes
+    id: nmap
+    attributes:
+      label: Environment
+      options:
+        - label: nmap is installed
+        - label: Connected through a VPN

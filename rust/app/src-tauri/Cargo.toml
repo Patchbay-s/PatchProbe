@@ -1,0 +1,29 @@
+[package]
+name = "patchprobe-app"
+description = "Application Tauri PatchProbe"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "patchprobe_app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+patchprobe-core.workspace = true
+patchprobe-platform.workspace = true
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+serde.workspace = true
+serde_json.workspace = true
+tokio = { workspace = true }
+tokio-util.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+
+[lints]
+workspace = true

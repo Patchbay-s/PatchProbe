@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Sans cette clé, macOS (14+) bloque silencieusement tout accès au réseau local :
+       les sondes échouent et le scan ne trouve aucun hôte. -->
+  <key>NSLocalNetworkUsageDescription</key>
+  <string>PatchProbe a besoin d'accéder au réseau local pour détecter les appareils connectés, leurs ports ouverts et leurs noms.</string>
+  <!-- Types de services parcourus par la découverte Bonjour de fin de scan. -->
+  <key>NSBonjourServices</key>
+  <array>
+    <string>_device-info._tcp</string>
+    <string>_companion-link._tcp</string>
+    <string>_airplay._tcp</string>
+    <string>_raop._tcp</string>
+    <string>_ipp._tcp</string>
+    <string>_ipps._tcp</string>
+    <string>_smb._tcp</string>
+    <string>_afpovertcp._tcp</string>
+    <string>_ssh._tcp</string>
+    <string>_googlecast._tcp</string>
+    <string>_spotify-connect._tcp</string>
+    <string>_homekit._tcp</string>
+    <string>_http._tcp</string>
+    <string>_printer._tcp</string>
+    <string>_workstation._tcp</string>
+    <string>_sftp-ssh._tcp</string>
+  </array>
+</dict>
+</plist>

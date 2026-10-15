@@ -1,0 +1,28 @@
+[package]
+name = "patchprobe-core"
+description = "Logique pure de PatchProbe : modèles, parseurs, protocoles, moteur de scan"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
+async-trait.workspace = true
+rand.workspace = true
+reqwest.workspace = true
+dns-lookup.workspace = true
+mdns-sd.workspace = true
+quick-xml.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
+
+[lints]
+workspace = true
