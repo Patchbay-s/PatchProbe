@@ -166,6 +166,18 @@ Everything runs locally: no account, no cloud, no telemetry.
 | App, Apple silicon (arm64) | [`PatchProbe_0.1.0_aarch64.dmg`](https://github.com/Patchbay-s/PatchProbe/releases/download/v0.1.0/PatchProbe_0.1.0_aarch64.dmg) | **Unsigned** — see the Gatekeeper note below |
 | App, universal (Apple silicon + Intel) | `patchprobe-<ver>-macos-universal.dmg` | Coming soon (signed and notarized) |
 
+#### Install with Homebrew
+
+The Homebrew cask installs the same unsigned Apple silicon build:
+
+```bash
+brew tap Patchbay-s/patchprobe
+brew install --cask patchprobe
+```
+
+On first launch, macOS may block the unsigned app. In Finder, Control-click
+`PatchProbe.app`, choose **Open**, then confirm. Intel support and signed builds are coming soon.
+
 Because this build is not signed or notarized, macOS will refuse to open it on first launch.
 After downloading, either right-click the app and choose **Open**, or clear the quarantine flag:
 
@@ -263,9 +275,11 @@ What is missing or known to be rough:
 - Name resolution coverage depends heavily on the network: the legacy app found few names on
   some networks without a known cause, which is what the per-technique diagnostic is meant to
   explain.
-- Platform notes: on **macOS**, scans fail silently if the *Local Network* permission is denied;
-  on **Linux**, unprivileged `ping` must be allowed; on **Windows**, the firewall may drop some
-  replies (NetBIOS, SSDP, SNMP) until the app is allowed through.
+- Platform notes: on **macOS**, if a scan finds no hosts, check that PatchProbe is allowed under
+  **System Settings › Privacy & Security › Local Network**; see the
+  [permission instructions](CONTRIBUTING.md#permissions-needed-to-scan). On **Linux**,
+  unprivileged `ping` must be allowed; on **Windows**, the firewall may drop some replies
+  (NetBIOS, SSDP, SNMP) until the app is allowed through.
 
 ## The Patchbay's apps
 
