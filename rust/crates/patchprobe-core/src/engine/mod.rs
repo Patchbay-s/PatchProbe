@@ -147,6 +147,7 @@ struct HostProbe {
     ip: Ipv4Addr,
     ping: PingReply,
     open_ports: Vec<u16>,
+    tcp_responded: bool,
     mac: Option<String>,
 }
 
@@ -165,14 +166,14 @@ struct Ctx {
 async fn probe_host(ctx: Ctx, ip: Ipv4Addr) -> HostProbe {
     let ping_timeout = Duration::from_millis(ctx.settings.ping_timeout_ms);
     let port_timeout = Duration::from_millis(ctx.settings.port_timeout_ms);
-    let (ping, open_ports) = tokio::join!(
+    let (ping, port_scan) = tokio::join!(
         ctx.system.ping(ip, ping_timeout),
         ports::scan_ports(ip, &ctx.ports, port_timeout, &ctx.limiter, &ctx.connector, &ctx.port_stats),
     );
-    let alive = ping.alive || !open_ports.is_empty();
+    let alive = ping.alive || port_scan.responsive;
     // MAC lue tout de suite, pendant que l'entrée ARP est fraîche.
     let mac = if alive { ctx.system.arp_lookup(ip).await } else { None };
-    HostProbe { ip, ping, open_ports, mac }
+    HostProbe { ip, ping, open_ports: port_scan.open_ports, tcp_responded: port_scan.responsive, mac }
 }
 
 async fn resolve_name(ctx: Ctx, ip: Ipv4Addr, open_ports: Vec<u16>) -> NameTrace {
@@ -237,7 +238,7 @@ impl ScanState {
     /// Applique une sonde ; renvoie l'index si l'hôte est vivant.
     fn apply_probe(&mut self, probe: HostProbe) -> Option<usize> {
         let index = self.index(probe.ip)?;
-        let alive = probe.ping.alive || !probe.open_ports.is_empty();
+        let alive = probe.ping.alive || probe.tcp_responded;
         let host = self.hosts.get_mut(index)?;
         if !alive {
             host.status = HostStatus::Down;

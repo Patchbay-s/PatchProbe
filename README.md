@@ -60,8 +60,8 @@ Everything runs locally: no account, no cloud, no telemetry.
 - Scan a **CIDR block** (`192.0.2.0/24`), a **range** (`192.0.2.1-192.0.2.254` or `192.0.2.1-254`)
   or a **single address**, up to a /16 (65,536 addresses). The local network is detected
   automatically, and the last five ranges are remembered.
-- **Ping and TCP scan run in parallel** for every host: an open port proves a host is there even
-  when it ignores ping.
+- **Ping and TCP scan run in parallel** for every host: an open port or a TCP connection refusal
+  proves a host is there even when it ignores ping and has no scanned service listening.
 - An **end-of-scan ARP sweep** promotes silent devices that the ARP table proves are present, and
   re-pings live hosts whose MAC address is still unknown.
 - **One global cap on simultaneous TCP connections** (256 by default) shared by all hosts and

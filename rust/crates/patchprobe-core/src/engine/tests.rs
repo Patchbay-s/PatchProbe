@@ -120,6 +120,28 @@ async fn open_port_proves_presence_without_ping() {
 }
 
 #[tokio::test]
+async fn refused_tcp_port_proves_presence_without_ping() {
+    let connector = Arc::new(SlowConnector {
+        delay: Duration::ZERO,
+        open: HashSet::new(),
+        current: AtomicUsize::new(0),
+        peak: AtomicUsize::new(0),
+    });
+    let (tx, rx) = mpsc::channel(1024);
+    let outcome = run_scan(
+        request("198.51.100.10", vec![443], no_discovery()),
+        deps(Arc::new(MockSystem::default()), connector, Arc::new(NoNameResolution)),
+        tx,
+        CancellationToken::new(),
+    )
+    .await;
+    let host = &outcome.hosts[0];
+    assert_eq!(host.status, HostStatus::Up);
+    assert!(host.open_ports.is_empty(), "un port refusé ne doit pas être listé comme ouvert");
+    assert!(drain(rx).await.iter().any(|event| matches!(event, ScanEvent::Finished { up: 1, .. })));
+}
+
+#[tokio::test]
 async fn global_tcp_cap_is_shared_by_all_hosts() {
     let connector = Arc::new(SlowConnector {
         delay: Duration::from_millis(5),
@@ -142,7 +164,7 @@ async fn global_tcp_cap_is_shared_by_all_hosts() {
     assert!(peak <= 16, "pic {peak} > plafond");
     assert!(peak >= 10, "le plafond devrait être atteint (pic {peak})");
     assert_eq!(outcome.stats.peak_tcp_connections, peak);
-    assert!(outcome.hosts.iter().all(|h| h.status == HostStatus::Down));
+    assert!(outcome.hosts.iter().all(|h| h.status == HostStatus::Up));
 }
 
 #[tokio::test]
