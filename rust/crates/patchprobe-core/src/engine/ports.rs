@@ -22,6 +22,13 @@ pub struct PortScanStats {
     pub abandoned_probes: AtomicU64,
 }
 
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct PortScanResult {
+    pub open_ports: Vec<u16>,
+    /// A successful TCP connection or a connection refusal proves the IP responded.
+    pub responsive: bool,
+}
+
 impl PortScanStats {
     pub fn exhaustion_events(&self) -> u64 {
         self.exhaustion_events.load(Ordering::Relaxed)
@@ -74,12 +81,19 @@ pub async fn scan_ports(
     limiter: &Arc<ConnectionLimiter>,
     connector: &Arc<dyn TcpConnector>,
     stats: &Arc<PortScanStats>,
-) -> Vec<u16> {
-    let mut open = Vec::new();
+) -> PortScanResult {
+    let mut result = PortScanResult::default();
     let mut set = JoinSet::new();
-    let mut collect = |result: Result<(u16, TcpProbe), tokio::task::JoinError>| {
-        if let Ok((port, TcpProbe::Open)) = result {
-            open.push(port);
+    let mut collect = |joined: Result<(u16, TcpProbe), tokio::task::JoinError>| {
+        if let Ok((port, probe)) = joined {
+            match probe {
+                TcpProbe::Open => {
+                    result.open_ports.push(port);
+                    result.responsive = true;
+                }
+                TcpProbe::Closed => result.responsive = true,
+                TcpProbe::Filtered | TcpProbe::ResourceExhausted | TcpProbe::Error(_) => {}
+            }
         }
     };
     for &port in ports {
@@ -94,8 +108,8 @@ pub async fn scan_ports(
     while let Some(result) = set.join_next().await {
         collect(result);
     }
-    open.sort_unstable();
-    open
+    result.open_ports.sort_unstable();
+    result
 }
 
 #[cfg(test)]
@@ -127,10 +141,11 @@ mod tests {
         let connector: Arc<dyn TcpConnector> = Arc::new(FlakyConnector { failures_left: AtomicU32::new(3) });
         let stats = Arc::new(PortScanStats::default());
         let limiter = ConnectionLimiter::new(4);
-        let open =
+        let result =
             scan_ports(Ipv4Addr::LOCALHOST, &[22, 80, 443], Duration::from_millis(100), &limiter, &connector, &stats)
                 .await;
-        assert_eq!(open, [80]);
+        assert_eq!(result.open_ports, [80]);
+        assert!(result.responsive);
         assert_eq!(stats.exhaustion_events(), 3);
         assert_eq!(stats.abandoned_probes(), 0);
         assert_eq!(limiter.in_flight(), 0);
@@ -140,7 +155,7 @@ mod tests {
     async fn gives_up_after_max_retries() {
         let connector: Arc<dyn TcpConnector> = Arc::new(FlakyConnector { failures_left: AtomicU32::new(100) });
         let stats = Arc::new(PortScanStats::default());
-        let open = scan_ports(
+        let result = scan_ports(
             Ipv4Addr::LOCALHOST,
             &[80],
             Duration::from_millis(100),
@@ -149,7 +164,8 @@ mod tests {
             &stats,
         )
         .await;
-        assert!(open.is_empty());
+        assert!(result.open_ports.is_empty());
+        assert!(!result.responsive);
         assert_eq!(stats.abandoned_probes(), 1);
         assert_eq!(stats.exhaustion_events(), u64::from(MAX_RESOURCE_RETRIES) + 1);
     }
