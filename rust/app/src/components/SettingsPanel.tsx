@@ -1,5 +1,6 @@
 import { useState } from "react";
-import type { AppSettings, PortPresetInfo, PortPresetKind, ScanSettings, TimingPreset } from "../types";
+import type { AppSettings, PortPresetInfo, PortPresetKind, ScanSettings, TechniqueId, TimingPreset } from "../types";
+import { TECHNIQUE_LABEL } from "../util";
 import { Modal } from "./Modal";
 
 interface Props {
@@ -12,6 +13,9 @@ interface Props {
   onClearCache: () => void;
   onClose: () => void;
 }
+
+/** Sources proposées comme nom par défaut (miroir de `TechniqueId::PREFERABLE`). */
+const NAME_SOURCES: TechniqueId[] = ["webTitle", "gatewayDns", "ptr", "mdns", "nbns", "smb", "llmnr", "snmp"];
 
 type NumericKey = {
   [K in keyof ScanSettings]: ScanSettings[K] extends number ? K : never;
@@ -82,6 +86,32 @@ export function SettingsPanel({ settings, portPresets, dataDir, onSave, onTiming
         <p className="hint">
           « Rapide » réduit les timeouts ; la découverte active et la passe ARP restent actives (coût fixe par scan). Le plafond de
           connexions TCP est partagé par tous les hôtes et tous les ports ; la résolution de nom a son propre budget.
+        </p>
+        <button className="primary" onClick={() => onSave({ ...settings, scan: draft })}>
+          Enregistrer les réglages
+        </button>
+      </section>
+
+      <section className="settings-section">
+        <h3>Nom des appareils</h3>
+        <div className="settings-grid">
+          <label className="wide">
+            <span>Nom par défaut</span>
+            <select
+              value={draft.preferredNameSource ?? ""}
+              onChange={(e) => setDraft({ ...draft, preferredNameSource: (e.target.value || null) as TechniqueId | null })}
+            >
+              {NAME_SOURCES.map((source) => (
+                <option key={source} value={source}>
+                  {TECHNIQUE_LABEL[source]}
+                </option>
+              ))}
+              <option value="">Automatique (DNS du routeur d'abord)</option>
+            </select>
+          </label>
+        </div>
+        <p className="hint">
+          Nom affiché quand cette source en trouve un ; sinon l'ordre automatique s'applique. Pris en compte au prochain scan.
         </p>
         <button className="primary" onClick={() => onSave({ ...settings, scan: draft })}>
           Enregistrer les réglages

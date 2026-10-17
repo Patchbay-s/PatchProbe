@@ -53,6 +53,8 @@ pub struct ResolverConfig {
     pub gateway: Option<Ipv4Addr>,
     pub snmp_community: String,
     pub ports: TechniquePorts,
+    /// Source de nom retenue en priorité quand elle trouve un nom (`None` : ordre par défaut).
+    pub preferred_name: Option<TechniqueId>,
 }
 
 impl Default for ResolverConfig {
@@ -64,6 +66,7 @@ impl Default for ResolverConfig {
             gateway: None,
             snmp_community: "public".into(),
             ports: TechniquePorts::default(),
+            preferred_name: None,
         }
     }
 }
@@ -74,6 +77,7 @@ impl ResolverConfig {
             name_timeout: Duration::from_millis(settings.name_timeout_ms),
             web_title_timeout: Duration::from_millis(settings.web_title_timeout_ms),
             gateway,
+            preferred_name: settings.preferred_name_source,
             ..Self::default()
         }
     }
@@ -136,26 +140,37 @@ impl Resolver {
             CacheLookup::RecentFailure => Some("échec récent mémorisé (moins de 5 min)".to_owned()),
             CacheLookup::Miss => None,
         };
-        let skip = skip_reason.as_deref();
+        // La source préférée n'est jamais sautée : un nom en cache venant d'une autre
+        // technique ne doit pas l'empêcher de reprendre la main.
+        let skip_unless_preferred =
+            |technique: TechniqueId| skip_reason.as_deref().filter(|_| cfg.preferred_name != Some(technique));
         let at = |port: u16| SocketAddrV4::new(ip, port);
         let (ptr, gateway, mdns, nbns, smb, llmnr, snmp) = tokio::join!(
             timed(TechniqueId::Ptr, techniques::system_ptr(ip, timeout)),
             timed(TechniqueId::GatewayDns, techniques::gateway_dns(ip, cfg.gateway, cfg.ports.dns, timeout)),
             unless_skipped(
                 TechniqueId::Mdns,
-                skip,
+                skip_unless_preferred(TechniqueId::Mdns),
                 techniques::dns_ptr(at(cfg.ports.mdns), ip, timeout, false, "mDNS")
             ),
-            unless_skipped(TechniqueId::Nbns, skip, techniques::nbns_query(at(cfg.ports.nbns), timeout)),
-            unless_skipped(TechniqueId::Smb, skip, techniques::smb_name(at(cfg.ports.smb), timeout)),
+            unless_skipped(
+                TechniqueId::Nbns,
+                skip_unless_preferred(TechniqueId::Nbns),
+                techniques::nbns_query(at(cfg.ports.nbns), timeout)
+            ),
+            unless_skipped(
+                TechniqueId::Smb,
+                skip_unless_preferred(TechniqueId::Smb),
+                techniques::smb_name(at(cfg.ports.smb), timeout)
+            ),
             unless_skipped(
                 TechniqueId::Llmnr,
-                skip,
+                skip_unless_preferred(TechniqueId::Llmnr),
                 techniques::dns_ptr(at(cfg.ports.llmnr), ip, timeout, false, "LLMNR")
             ),
             unless_skipped(
                 TechniqueId::Snmp,
-                skip,
+                skip_unless_preferred(TechniqueId::Snmp),
                 techniques::snmp_sys_name(at(cfg.ports.snmp), &cfg.snmp_community, timeout)
             ),
         );
@@ -165,9 +180,10 @@ impl Resolver {
         }
 
         let has_name = trace.results.iter().any(|r| r.outcome.found().is_some());
-        let web = if let (ResolveMode::Scan, Some(reason)) = (mode, skip_reason.as_deref()) {
+        let web_preferred = cfg.preferred_name == Some(TechniqueId::WebTitle);
+        let web = if let (ResolveMode::Scan, Some(reason)) = (mode, skip_unless_preferred(TechniqueId::WebTitle)) {
             skipped(TechniqueId::WebTitle, reason)
-        } else if mode == ResolveMode::Scan && has_name {
+        } else if mode == ResolveMode::Scan && has_name && !web_preferred {
             skipped(TechniqueId::WebTitle, "un nom a déjà été trouvé")
         } else {
             timed(
@@ -181,7 +197,7 @@ impl Resolver {
         if let CacheLookup::Hit { name, .. } = &cached {
             trace.push(TechniqueResult::new(TechniqueId::Cache, Outcome::Found(name.clone()), Duration::ZERO));
         }
-        trace.choose();
+        trace.choose(cfg.preferred_name);
         self.remember(&trace, mode);
         trace
     }

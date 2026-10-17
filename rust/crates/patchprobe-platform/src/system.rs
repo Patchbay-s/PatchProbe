@@ -113,7 +113,9 @@ const SBIN_DIRS: &[&str] = &["/sbin", "/usr/sbin", "/bin", "/usr/bin", "C:\\Wind
 
 impl SystemPlatform {
     pub fn new() -> Self {
-        Self { ping_path: find_executable("ping", SBIN_DIRS), arp_path: find_executable("arp", SBIN_DIRS) }
+        // Bac à sable : la table ARP est toujours vide, inutile de lancer `arp` pour chaque hôte.
+        let arp_path = if crate::is_sandboxed() { None } else { find_executable("arp", SBIN_DIRS) };
+        Self { ping_path: find_executable("ping", SBIN_DIRS), arp_path }
     }
 
     /// Arguments d'un ping unique sans privilèges, selon l'OS.

@@ -13,6 +13,8 @@ interface Props {
   onPing: (ip: string) => void;
   onOpen: (ip: string) => void;
   emptyText: string;
+  /** Faux dans l'édition App Store : la table ARP y est inaccessible, MAC et fabricant restent vides. */
+  showMac: boolean;
 }
 
 type Row = { kind: "group"; key: string; count: number } | { kind: "host"; host: Host };
@@ -62,15 +64,17 @@ export function ResultsTable(props: Props) {
   const last = Math.min(rows.length, Math.ceil((scrollTop + viewport) / ROW_HEIGHT) + OVERSCAN);
   const visible = rows.slice(first, last);
 
+  const columns = props.showMac ? COLUMNS : COLUMNS.filter((c) => c.key !== "mac" && c.key !== "vendor");
+
   const headerClick = (key: SortKey | null) => {
     if (!key) return;
     props.onSort(props.sort.key === key ? { key, ascending: !props.sort.ascending } : { key, ascending: true });
   };
 
   return (
-    <div className="table">
+    <div className={`table ${props.showMac ? "" : "no-mac"}`}>
       <div className="table-row table-header" role="row">
-        {COLUMNS.map((column, index) => (
+        {columns.map((column, index) => (
           <div
             key={index}
             role="columnheader"
@@ -122,13 +126,17 @@ export function ResultsTable(props: Props) {
                   </div>
                   <div className="cell">{formatLatency(host.latencyMs)}</div>
                   <div className="cell">{host.probableOs ?? <span className="muted">—</span>}</div>
-                  <div className="cell mono">
-                    {host.mac ?? <span className="muted">{host.isLikelyRouted ? "routé" : "—"}</span>}
-                  </div>
-                  <div className="cell" title={host.vendor ?? ""}>
-                    {host.vendor ?? <span className="muted">—</span>}
-                    {host.vendorOverridden ? <span className="badge">modifié</span> : null}
-                  </div>
+                  {props.showMac && (
+                    <>
+                      <div className="cell mono">
+                        {host.mac ?? <span className="muted">{host.isLikelyRouted ? "routé" : "—"}</span>}
+                      </div>
+                      <div className="cell" title={host.vendor ?? ""}>
+                        {host.vendor ?? <span className="muted">—</span>}
+                        {host.vendorOverridden ? <span className="badge">modifié</span> : null}
+                      </div>
+                    </>
+                  )}
                   <div className="cell mono" title={host.openPorts.join(", ")}>
                     {host.openPorts.length ? host.openPorts.join(", ") : <span className="muted">—</span>}
                   </div>

@@ -137,6 +137,7 @@ textarea { width: 100%; resize: vertical; }
   grid-template-columns: 34px 130px 110px minmax(140px, 1.4fr) 76px 110px 140px minmax(120px, 1fr) minmax(110px, 1fr) 100px;
   align-items: center;
 }
+.table.no-mac .table-row { grid-template-columns: 34px 130px 110px minmax(140px, 1.4fr) 76px 110px minmax(110px, 1fr) 100px; }
 .table-header { font-weight: 600; background: var(--bg-alt); border-bottom: 1px solid var(--border); height: 30px; }
 .table-header .sortable { cursor: pointer; user-select: none; }
 .table-body { flex: 1; overflow: auto; position: relative; }
@@ -224,5 +225,6 @@ pre.raw { max-height: 240px; overflow: auto; background: var(--bg-alt); padding:
 .settings-section h3 { margin: 0; font-size: 13px; }
 .settings-grid { display: grid; gap: 6px; }
 .settings-grid label { display: grid; grid-template-columns: 1fr 110px 30px; align-items: center; gap: 8px; }
+.settings-grid label.wide { grid-template-columns: 1fr 260px; }
 .preset-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .preset-list li { display: flex; gap: 10px; align-items: center; }

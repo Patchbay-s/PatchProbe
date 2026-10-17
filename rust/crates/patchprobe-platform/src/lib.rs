@@ -8,4 +8,10 @@ pub mod system;
 pub mod tools;
 
 pub use patchprobe_core as core;
+
+/// Vrai dans le bac à sable d'Apple (édition Mac App Store) : la table ARP y est vide et
+/// traceroute ou nmap ne peuvent pas être lancés.
+pub fn is_sandboxed() -> bool {
+    cfg!(target_os = "macos") && std::env::var_os("APP_SANDBOX_CONTAINER_ID").is_some()
+}
 pub use system::{validate_url, Ipv4Config, NetworkProfile, Platform, PlatformError, SystemPlatform};

@@ -53,6 +53,9 @@ pub struct Bootstrap {
     udp_ports: Vec<u16>,
     nmap_available: bool,
     nmap_hint: &'static str,
+    traceroute_available: bool,
+    /// Édition App Store (bac à sable) : pas de MAC ni de fabricant.
+    sandboxed: bool,
     annotations: Annotations,
     data_dir: String,
     range_input: String,
@@ -79,6 +82,8 @@ pub async fn bootstrap(state: State<'_, AppState>) -> CmdResult<Bootstrap> {
         udp_ports: DEFAULT_UDP_PORTS.to_vec(),
         nmap_available: tools::find_nmap().is_some(),
         nmap_hint: tools::nmap_install_hint(),
+        traceroute_available: tools::traceroute_available(),
+        sandboxed: patchprobe_platform::is_sandboxed(),
         annotations: state.annotations.get(),
         data_dir: state.paths.base().display().to_string(),
         range_input,
@@ -435,10 +440,12 @@ pub async fn export_scan(
         }
     };
     let target = std::path::PathBuf::from(&path);
-    tauri::async_runtime::spawn_blocking(move || patchprobe_core::store::write_atomic(&target, content.as_bytes()))
+    // Écriture directe, pas `write_atomic` : dans le bac à sable de l'App Store, seul le fichier
+    // choisi dans le panneau d'enregistrement est accessible, pas un fichier temporaire voisin.
+    tauri::async_runtime::spawn_blocking(move || std::fs::write(&target, content.as_bytes()))
         .await
         .map_err(|e| e.to_string())?
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| format!("Impossible d'écrire {path} : {e}"))?;
     Ok(path)
 }
 

@@ -254,7 +254,7 @@ impl NameResolution for InstantNames {
             Outcome::Found(format!("host-{}", ip.octets()[3])),
             Duration::ZERO,
         ));
-        trace.choose();
+        trace.choose(None);
         trace
     }
 

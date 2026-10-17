@@ -287,6 +287,7 @@ export default function App() {
           onSelect={setSelectedIp}
           onPing={(ip) => api.pingHost(ip).then((h) => mergeHosts([h])).catch((e) => notify("error", errorMessage(e)))}
           onOpen={(ip) => api.openHost(ip).catch((e) => notify("error", errorMessage(e)))}
+          showMac={!(boot?.sandboxed ?? false)}
           emptyText={
             hosts.size === 0
               ? progress.running
@@ -304,6 +305,8 @@ export default function App() {
             annotation={annotations[selectedHost.ip] ?? null}
             nmapAvailable={boot.nmapAvailable}
             nmapHint={boot.nmapHint}
+            tracerouteAvailable={boot.tracerouteAvailable}
+            sandboxed={boot.sandboxed}
             udpPorts={boot.udpPorts}
             onClose={() => setSelectedIp(null)}
             onAnnotations={setAnnotations}
