@@ -24,7 +24,9 @@ const NMAP_DIRS: &[&str] = &["/usr/bin", "/usr/local/bin", "/snap/bin"];
 
 /// Indication d'installation propre à l'OS.
 pub fn nmap_install_hint() -> &'static str {
-    if cfg!(target_os = "macos") {
+    if crate::is_sandboxed() {
+        "nmap n'est pas disponible dans la version App Store : utilisez la version téléchargeable."
+    } else if cfg!(target_os = "macos") {
         "nmap introuvable — installez-le avec « brew install nmap »."
     } else if cfg!(target_os = "windows") {
         "nmap introuvable — installez-le depuis https://nmap.org/download.html (installateur Windows)."
@@ -34,7 +36,15 @@ pub fn nmap_install_hint() -> &'static str {
 }
 
 pub fn find_nmap() -> Option<PathBuf> {
+    if crate::is_sandboxed() {
+        return None;
+    }
     find_executable("nmap", NMAP_DIRS)
+}
+
+/// Traceroute utilisable (le bac à sable de l'App Store interdit de lancer `traceroute`).
+pub fn traceroute_available() -> bool {
+    !crate::is_sandboxed()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
@@ -96,6 +106,9 @@ pub fn traceroute_command(ip: Ipv4Addr) -> Option<(PathBuf, Vec<String>, Duratio
 }
 
 pub async fn run_traceroute(ip: Ipv4Addr, cancel: &CancellationToken) -> Result<Vec<TracerouteHop>, ToolError> {
+    if !traceroute_available() {
+        return Err(ToolError::NotInstalled("traceroute n'est pas disponible dans la version App Store.".into()));
+    }
     let (path, args, timeout) = traceroute_command(ip).ok_or_else(|| {
         ToolError::NotInstalled(
             "traceroute introuvable sur ce système (ni traceroute, ni tracepath, ni tracert).".into(),

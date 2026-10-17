@@ -56,6 +56,11 @@ Release builds (`npm run tauri build`) need signing credentials only for signed/
 packages; see [`.env.example`](.env.example). Never commit certificates, keys or
 passwords.
 
+For a Developer ID signed and notarized macOS build, fill `.env` and run
+`rust/app/scripts/release-macos.sh` from Terminal.app. The Mac App Store edition
+(sandboxed: no MAC addresses, traceroute or nmap) is packaged by
+`rust/app/scripts/release-appstore.sh`, which produces a signed `.pkg` for Transporter.
+
 ## Conventions
 
 - **Layering**: pure logic, parsers and protocols go in `PatchProbe-core` (no UI, no

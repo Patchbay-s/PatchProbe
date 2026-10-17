@@ -6,6 +6,9 @@
        les sondes échouent et le scan ne trouve aucun hôte. -->
   <key>NSLocalNetworkUsageDescription</key>
   <string>PatchProbe a besoin d'accéder au réseau local pour détecter les appareils connectés, leurs ports ouverts et leurs noms.</string>
+  <!-- Seul le chiffrement standard du système est utilisé (HTTPS) : exempté (App Store Connect). -->
+  <key>ITSAppUsesNonExemptEncryption</key>
+  <false/>
   <!-- Types de services parcourus par la découverte Bonjour de fin de scan. -->
   <key>NSBonjourServices</key>
   <array>

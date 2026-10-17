@@ -40,6 +40,8 @@ export interface ScanSettings {
   maxTcpConnections: number;
   maxParallelHosts: number;
   maxParallelNameResolutions: number;
+  /** Source du nom affiché quand elle en trouve un ; `null` = ordre automatique. */
+  preferredNameSource: TechniqueId | null;
 }
 
 export type PortPresetKind = "cameraIP" | "generic" | "webServer" | "printer" | "nas";
@@ -88,6 +90,9 @@ export interface Bootstrap {
   udpPorts: number[];
   nmapAvailable: boolean;
   nmapHint: string;
+  tracerouteAvailable: boolean;
+  /** Édition App Store (bac à sable) : pas de MAC ni de fabricant. */
+  sandboxed: boolean;
   annotations: Annotations;
   dataDir: string;
   rangeInput: string;

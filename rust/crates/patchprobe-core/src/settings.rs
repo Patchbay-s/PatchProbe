@@ -3,6 +3,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::resolve::TechniqueId;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum TimingPreset {
@@ -38,6 +40,9 @@ pub struct ScanSettings {
     pub max_parallel_hosts: usize,
     /// Budget séparé de résolutions de nom simultanées (jamais affamé par le scan de ports).
     pub max_parallel_name_resolutions: usize,
+    /// Source du nom affiché quand elle en trouve un (`None` : ordre automatique). Le titre web
+    /// par défaut : c'est le nom le plus parlant pour les services auto-hébergés.
+    pub preferred_name_source: Option<TechniqueId>,
 }
 
 impl ScanSettings {
@@ -64,6 +69,7 @@ impl ScanSettings {
             max_tcp_connections: 256,
             max_parallel_hosts: 64,
             max_parallel_name_resolutions: 32,
+            preferred_name_source: Some(TechniqueId::WebTitle),
         }
     }
 
@@ -108,6 +114,7 @@ impl ScanSettings {
         self.max_tcp_connections = self.max_tcp_connections.clamp(1, 4096);
         self.max_parallel_hosts = self.max_parallel_hosts.clamp(1, 1024);
         self.max_parallel_name_resolutions = self.max_parallel_name_resolutions.clamp(1, 512);
+        self.preferred_name_source = self.preferred_name_source.filter(|t| TechniqueId::PREFERABLE.contains(t));
         self
     }
 }
@@ -170,5 +177,16 @@ mod tests {
             ScanSettings { max_tcp_connections: 0, max_parallel_hosts: 1_000_000, ..Default::default() }.sanitized();
         assert_eq!(s.max_tcp_connections, 1);
         assert_eq!(s.max_parallel_hosts, 1024);
+    }
+
+    #[test]
+    fn preferred_name_source_defaults_to_web_title() {
+        assert_eq!(ScanSettings::default().preferred_name_source, Some(TechniqueId::WebTitle));
+        let parsed: ScanSettings = serde_json::from_str(r#"{"preferredNameSource":null}"#).unwrap();
+        assert_eq!(parsed.preferred_name_source, None);
+        let parsed: ScanSettings = serde_json::from_str(r#"{"preferredNameSource":"nbns"}"#).unwrap();
+        assert_eq!(parsed.preferred_name_source, Some(TechniqueId::Nbns));
+        let cached = ScanSettings { preferred_name_source: Some(TechniqueId::Cache), ..Default::default() };
+        assert_eq!(cached.sanitized().preferred_name_source, None);
     }
 }

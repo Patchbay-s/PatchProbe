@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Entitlements de l'édition Mac App Store. __TEAM_ID__ et __BUNDLE_ID__ sont remplacés par
+     scripts/release-appstore.sh ; la version Developer ID n'utilise pas ce fichier. -->
+<plist version="1.0">
+<dict>
+  <key>com.apple.security.app-sandbox</key>
+  <true/>
+  <!-- Sondes TCP, DNS, mDNS, NBNS, SNMP, titres web. -->
+  <key>com.apple.security.network.client</key>
+  <true/>
+  <!-- Sans elle, `ping` ne peut pas recevoir les réponses ICMP dans le bac à sable. -->
+  <key>com.apple.security.network.server</key>
+  <true/>
+  <!-- Exports CSV/JSON vers l'emplacement choisi dans le panneau d'enregistrement. -->
+  <key>com.apple.security.files.user-selected.read-write</key>
+  <true/>
+  <key>com.apple.application-identifier</key>
+  <string>__TEAM_ID__.__BUNDLE_ID__</string>
+  <key>com.apple.developer.team-identifier</key>
+  <string>__TEAM_ID__</string>
+</dict>
+</plist>

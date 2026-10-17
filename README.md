@@ -24,7 +24,7 @@ Everything runs locally: no account, no cloud, no telemetry.
   <img alt="Written in Rust" src="https://img.shields.io/badge/written%20in-Rust-b7410e?logo=rust&logoColor=white">
   <img alt="Built with Tauri 2" src="https://img.shields.io/badge/Tauri-2-24c8db?logo=tauri&logoColor=white">
   <img alt="Runs on macOS, Windows and Linux" src="https://img.shields.io/badge/runs%20on-macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-2563eb">
-  <a href="#status"><img alt="Status: pre-release" src="https://img.shields.io/badge/status-pre--release-f5a524"></a>
+  <a href="#status"><img alt="Status: 1.0" src="https://img.shields.io/badge/status-1.0-2ea44f"></a>
 </p>
 
 <br>
@@ -88,6 +88,8 @@ Everything runs locally: no account, no cloud, no telemetry.
 - Every technique returns a typed result (*found*, *no name* with the reason, *timeout*, *error*,
   *skipped*). The **name diagnostic** panel shows the full trace for a host and can re-run every
   technique on demand.
+- **Default name source** setting: the HTML title of web services is shown first by default
+  (best for self-hosted services); pick any other technique, or the automatic order, in Settings.
 - A per-IP cache keeps found names for 7 days; failures are only remembered for 5 minutes.
 - All protocol decoders are hand-written, bounds-checked and tested against truncated and corrupted packets.
 
@@ -101,6 +103,9 @@ Everything runs locally: no account, no cloud, no telemetry.
 - Vendor lookup in the **embedded IEEE OUI registry** (about 39,000 entries), offline.
 - **Manual vendor correction per MAC address**, to relabel a device or fix a randomized MAC.
 - **Wake-on-LAN** magic packet from the host details.
+- On **macOS 27**, the system only shows the neighbor table to notarized apps: use the signed
+  release (or a Developer ID build). The Mac App Store edition is sandboxed and shows no MAC
+  addresses or vendors.
 
 ## Port scanning
 
@@ -155,37 +160,26 @@ Everything runs locally: no account, no cloud, no telemetry.
 
 ## Downloads
 
-> **Pre-release v0.1.0.** The first build is available for **Apple silicon only** and is
-> **unsigned** (no Apple Developer ID yet). Intel, Windows and Linux packages are coming soon;
-> until then, [build from source](#build-from-source).
+> **Version 1.0.0.** The macOS build is for **Apple silicon**, signed with an Apple Developer ID
+> and notarized. Intel, Windows and Linux packages are coming soon; until then,
+> [build from source](#build-from-source).
 
 ### macOS
 
 | Build | File | Notes |
 |---|---|---|
-| App, Apple silicon (arm64) | [`PatchProbe_0.1.0_aarch64.dmg`](https://github.com/Patchbay-s/PatchProbe/releases/download/v0.1.0/PatchProbe_0.1.0_aarch64.dmg) | **Unsigned** — see the Gatekeeper note below |
-| App, universal (Apple silicon + Intel) | `patchprobe-<ver>-macos-universal.dmg` | Coming soon (signed and notarized) |
+| App, Apple silicon (arm64) | [`PatchProbe_1.0.0_aarch64.dmg`](https://github.com/Patchbay-s/PatchProbe/releases/download/v1.0.0/PatchProbe_1.0.0_aarch64.dmg) | Signed and notarized, all features |
+| Mac App Store | Coming soon | Sandboxed edition: no MAC addresses, vendors, traceroute or nmap |
+| App, universal (Apple silicon + Intel) | `PatchProbe_<ver>_universal.dmg` | Coming soon |
 
 #### Install with Homebrew
-
-The Homebrew cask installs the same unsigned Apple silicon build:
 
 ```bash
 brew tap Patchbay-s/patchprobe
 brew install --cask patchprobe
 ```
 
-On first launch, macOS may block the unsigned app. In Finder, Control-click
-`PatchProbe.app`, choose **Open**, then confirm. Intel support and signed builds are coming soon.
-
-Because this build is not signed or notarized, macOS will refuse to open it on first launch.
-After downloading, either right-click the app and choose **Open**, or clear the quarantine flag:
-
-```bash
-xattr -dr com.apple.quarantine /Applications/PatchProbe.app
-```
-
-Verify the download against [`SHA256SUMS.txt`](https://github.com/Patchbay-s/PatchProbe/releases/download/v0.1.0/SHA256SUMS.txt).
+Verify the download against [`SHA256SUMS.txt`](https://github.com/Patchbay-s/PatchProbe/releases/download/v1.0.0/SHA256SUMS.txt).
 
 ### Windows
 
@@ -221,7 +215,7 @@ git clone https://github.com/Patchbay-s/PatchProbe.git
 cd PatchProbe/rust/app
 npm ci
 npm run tauri dev      # run in development mode
-npm run tauri build    # build an app bundle/installer for your OS (unsigned)
+npm run tauri build    # build an app bundle/installer for your OS (not notarized)
 ```
 
 Run the checks:
@@ -251,10 +245,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for per-OS details and the permissions a 
 
 ## Status
 
-PatchProbe is **pre-release**. What works today:
-
-Current version: **0.1.0**, published as a [pre-release](https://github.com/Patchbay-s/PatchProbe/releases/tag/v0.1.0)
-(Apple silicon, unsigned). Follow the [releases page](https://github.com/Patchbay-s/PatchProbe/releases) for updates.
+Current version: **1.0.0**, [released](https://github.com/Patchbay-s/PatchProbe/releases/tag/v1.0.0) for
+Apple silicon (signed and notarized). Follow the
+[releases page](https://github.com/Patchbay-s/PatchProbe/releases) for updates. What works today:
 
 - Everything described above is implemented in the Rust/Tauri app and covered by about 200
   automated tests (parsers and protocol decoders fed with fixtures from all three OS, network
@@ -263,8 +256,7 @@ Current version: **0.1.0**, published as a [pre-release](https://github.com/Patc
 
 What is missing or known to be rough:
 
-- **No signed or notarized packages yet**, and no auto-update: the v0.1.0 pre-release is an
-  unsigned Apple silicon build only.
+- **Apple silicon only** for now, and no auto-update.
 - The app has **not yet been field-tested by users on many real networks**; please report what
   you see, the name diagnostic panel output is especially useful.
 - Features of the legacy Swift app **not ported yet**: reading and changing the IP configuration

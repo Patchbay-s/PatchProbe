@@ -18,6 +18,8 @@ interface Props {
   annotation: IpAnnotation | null;
   nmapAvailable: boolean;
   nmapHint: string;
+  tracerouteAvailable: boolean;
+  sandboxed: boolean;
   udpPorts: number[];
   onClose: () => void;
   onAnnotations: (a: Annotations) => void;
@@ -128,7 +130,7 @@ function RunButtons<T>({ task, label }: { task: ReturnType<typeof useTask<T>>; l
   );
 }
 
-export function HostDetail({ host, annotation, nmapAvailable, nmapHint, udpPorts, onClose, onAnnotations, onHostsUpdated, notify }: Props) {
+export function HostDetail({ host, annotation, nmapAvailable, nmapHint, tracerouteAvailable, sandboxed, udpPorts, onClose, onAnnotations, onHostsUpdated, notify }: Props) {
   const ip = host.ip;
   const [note, setNote] = useState(annotation?.note ?? "");
   const [vendorInput, setVendorInput] = useState(host.vendorOverridden ? host.vendor ?? "" : "");
@@ -211,7 +213,12 @@ export function HostDetail({ host, annotation, nmapAvailable, nmapHint, udpPorts
             {host.ttl !== null && <span className="muted"> (TTL {host.ttl})</span>}
           </dd>
           <dt>MAC</dt>
-          <dd className="mono">{host.mac ?? (host.isLikelyRouted ? "Non disponible — hôte routé (pas un voisin Ethernet direct)" : "—")}</dd>
+          <dd className="mono">{host.mac ??
+              (host.isLikelyRouted
+                ? "Non disponible — hôte routé (pas un voisin Ethernet direct)"
+                : sandboxed
+                  ? "Non disponible dans la version App Store"
+                  : "—")}</dd>
           <dt>Fabricant</dt>
           <dd>
             {host.vendor ?? "—"} {host.vendorOverridden && <span className="badge">modifié</span>}
@@ -292,8 +299,10 @@ export function HostDetail({ host, annotation, nmapAvailable, nmapHint, udpPorts
           )}
         </Section>
 
-        <Section title="Traceroute" actions={<RunButtons task={trace} label="Tracer la route" />}>
-          {trace.state.status === "done" ? (
+        <Section title="Traceroute" actions={tracerouteAvailable ? <RunButtons task={trace} label="Tracer la route" /> : undefined}>
+          {!tracerouteAvailable ? (
+            <p className="hint">Traceroute n'est pas disponible dans la version App Store.</p>
+          ) : trace.state.status === "done" ? (
             <HopsView hops={trace.state.data} />
           ) : trace.state.status === "error" ? (
             <p className="error-text">{trace.state.message}</p>

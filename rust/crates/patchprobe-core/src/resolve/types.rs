@@ -50,6 +50,10 @@ impl TechniqueId {
         Self::Cache,
     ];
 
+    /// Techniques proposées comme source de nom préférée (directes, rejouées à chaque scan).
+    pub const PREFERABLE: [TechniqueId; 8] =
+        [Self::GatewayDns, Self::Ptr, Self::Mdns, Self::Nbns, Self::Smb, Self::Llmnr, Self::Snmp, Self::WebTitle];
+
     pub fn label(self) -> &'static str {
         match self {
             Self::Cache => "Cache",
@@ -158,9 +162,10 @@ impl NameTrace {
         self.results.iter().rev().find(|r| r.technique == technique)
     }
 
-    /// Choisit le nom selon [`TechniqueId::PRIORITY`] parmi les résultats `Found`.
-    pub fn choose(&mut self) {
-        self.chosen = TechniqueId::PRIORITY.into_iter().find_map(|technique| {
+    /// Choisit le nom parmi les résultats `Found` : la technique préférée d'abord si elle a
+    /// trouvé un nom, sinon selon [`TechniqueId::PRIORITY`].
+    pub fn choose(&mut self, preferred: Option<TechniqueId>) {
+        self.chosen = preferred.into_iter().chain(TechniqueId::PRIORITY).find_map(|technique| {
             self.result(technique)
                 .and_then(|r| r.outcome.found())
                 .map(|name| ChosenName { name: name.to_owned(), technique })
@@ -222,10 +227,25 @@ mod tests {
             Outcome::Found("pc.example.invalid".into()),
             Duration::ZERO,
         ));
-        trace.choose();
+        trace.choose(None);
         let chosen = trace.chosen.unwrap();
         assert_eq!(chosen.name, "pc.example.invalid");
         assert_eq!(chosen.technique, TechniqueId::GatewayDns);
+    }
+
+    #[test]
+    fn preferred_technique_wins_then_priority_applies() {
+        let found =
+            |technique, name: &str| TechniqueResult::new(technique, Outcome::Found(name.into()), Duration::ZERO);
+        let mut trace = NameTrace::new(Ipv4Addr::LOCALHOST);
+        trace.push(found(TechniqueId::GatewayDns, "pc.example.invalid"));
+        trace.push(found(TechniqueId::WebTitle, "Panel"));
+        trace.choose(Some(TechniqueId::WebTitle));
+        assert_eq!(trace.chosen.as_ref().map(|c| c.technique), Some(TechniqueId::WebTitle));
+        trace.choose(Some(TechniqueId::Snmp));
+        assert_eq!(trace.chosen.as_ref().map(|c| c.technique), Some(TechniqueId::GatewayDns));
+        trace.choose(None);
+        assert_eq!(trace.chosen.as_ref().map(|c| c.technique), Some(TechniqueId::GatewayDns));
     }
 
     #[test]
