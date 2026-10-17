@@ -9,9 +9,6 @@
   <!-- Sondes TCP, DNS, mDNS, NBNS, SNMP, titres web. -->
   <key>com.apple.security.network.client</key>
   <true/>
-  <!-- Sans elle, `ping` ne peut pas recevoir les réponses ICMP dans le bac à sable. -->
-  <key>com.apple.security.network.server</key>
-  <true/>
   <!-- Exports CSV/JSON vers l'emplacement choisi dans le panneau d'enregistrement. -->
   <key>com.apple.security.files.user-selected.read-write</key>
   <true/>

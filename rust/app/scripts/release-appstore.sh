@@ -41,8 +41,10 @@ has_identity "$APPLE_INSTALLER_IDENTITY" || fail "certificat introuvable : $APPL
   fail "APPLE_PROVISIONING_PROFILE doit pointer vers le profil « Mac App Store Connect » (.provisionprofile)."
 
 version="$(node -p 'require(process.argv[1]).version' "$app_dir/src-tauri/tauri.conf.json")"
-# CFBundleVersion doit croître à chaque envoi pour une même version.
-build_number="${BUILD_NUMBER:-$(date +%Y%m%d%H%M)}"
+# CFBundleVersion doit croître à chaque envoi : compteur versionné dans `appstore/build-number`,
+# à incrémenter avant chaque soumission (BUILD_NUMBER reste prioritaire pour un envoi ponctuel).
+build_number="${BUILD_NUMBER:-$(tr -d '[:space:]' < "$app_dir/src-tauri/appstore/build-number")}"
+[[ "$build_number" =~ ^[0-9]+$ ]] || fail "numéro de build invalide : « $build_number »."
 
 # Binaire universel si la cible Intel est installée, sinon Apple silicon seulement : l'App Store
 # n'accepte alors le paquet qu'avec macOS 12.0 minimum (erreur 90869).
