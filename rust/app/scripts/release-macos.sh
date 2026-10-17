@@ -48,4 +48,16 @@ echo "--- vérifications"
 codesign --verify --strict --deep "$app"
 spctl --assess --type execute -vv "$app"
 xcrun stapler validate "$app"
+
+# Tauri ne notarise que l'app : le DMG lui-même est soumis et agrafé ici.
+echo "--- notarisation du DMG"
+if [[ -n "${APPLE_API_KEY:-}" ]]; then
+  xcrun notarytool submit "$dmg" --wait \
+    --key "$APPLE_API_KEY_PATH" --key-id "$APPLE_API_KEY" --issuer "$APPLE_API_ISSUER"
+else
+  xcrun notarytool submit "$dmg" --wait \
+    --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID"
+fi
+xcrun stapler staple "$dmg"
+spctl --assess --type open --context context:primary-signature -vv "$dmg"
 echo "OK : $dmg"
