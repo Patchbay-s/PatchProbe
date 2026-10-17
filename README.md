@@ -160,9 +160,11 @@ Everything runs locally: no account, no cloud, no telemetry.
 
 ## Downloads
 
-> **Version 1.0.0.** The macOS build is for **Apple silicon**, signed with an Apple Developer ID
-> and notarized. Intel, Windows and Linux packages are coming soon; until then,
-> [build from source](#build-from-source).
+> **Latest release: 1.0.1.** The [Windows x64 release](https://github.com/Patchbay-s/PatchProbe/releases/tag/v1.0.1)
+> contains tested MSI and NSIS installers. The [macOS 1.0.0 release](https://github.com/Patchbay-s/PatchProbe/releases/tag/v1.0.0)
+> is for **Apple silicon**, signed with an Apple Developer ID and notarized. Linux x64 packages are
+> available as [test workflow artifacts](https://github.com/Patchbay-s/PatchProbe/actions/runs/39068547383),
+> not as a production release.
 
 ### macOS
 
@@ -185,16 +187,20 @@ Verify the download against [`SHA256SUMS.txt`](https://github.com/Patchbay-s/Pat
 
 | Build | Installer | Portable |
 |---|---|---|
-| x64 (64-bit Intel/AMD) | `patchprobe-<ver>-windows-x64.msi` — coming soon | `patchprobe-<ver>-windows-x64-portable.zip` — coming soon |
-| arm64 | `patchprobe-<ver>-windows-arm64.msi` — coming soon | `patchprobe-<ver>-windows-arm64-portable.zip` — coming soon |
+| x64 (64-bit Intel/AMD) | [MSI](https://github.com/Patchbay-s/PatchProbe/releases/download/v1.0.1/PatchProbe_1.0.1_windows-x64_en-US.msi) · [NSIS](https://github.com/Patchbay-s/PatchProbe/releases/download/v1.0.1/PatchProbe_1.0.1_windows-x64-setup.exe) | Not currently built |
+| arm64 | Coming soon | Coming soon |
 
 ### Linux
 
 | Format | x86_64 | aarch64 (ARM64) |
 |---|---|---|
-| AppImage | `patchprobe-<ver>-linux-x86_64.AppImage` — coming soon | `patchprobe-<ver>-linux-aarch64.AppImage` — coming soon |
-| Debian/Ubuntu | `patchprobe-<ver>-linux-x86_64.deb` — coming soon | `patchprobe-<ver>-linux-aarch64.deb` — coming soon |
-| Fedora/RHEL/openSUSE | `patchprobe-<ver>-linux-x86_64.rpm` — coming soon | `patchprobe-<ver>-linux-aarch64.rpm` — coming soon |
+| AppImage | [`patchprobe-Linux-x64` artifact](https://github.com/Patchbay-s/PatchProbe/actions/runs/39068547383) | Coming soon |
+| Debian/Ubuntu | [`patchprobe-Linux-x64` artifact](https://github.com/Patchbay-s/PatchProbe/actions/runs/39068547383) | Coming soon |
+| Fedora/RHEL/openSUSE | Not currently built | Not currently built |
+
+Open the workflow run above and download the Linux artifact from **Artifacts**.
+Artifacts are retained for 30 days. These unsigned packages are for testing and are not a
+production release.
 
 **nmap** is never bundled. Install it separately if you want service detection.
 
@@ -245,14 +251,15 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for per-OS details and the permissions a 
 
 ## Status
 
-Current version: **1.0.0**, [released](https://github.com/Patchbay-s/PatchProbe/releases/tag/v1.0.0) for
-Apple silicon (signed and notarized). Follow the
+Current published Windows version: **1.0.1**, [released](https://github.com/Patchbay-s/PatchProbe/releases/tag/v1.0.1).
+The macOS Apple silicon release remains **1.0.0**, signed and notarized. Follow the
 [releases page](https://github.com/Patchbay-s/PatchProbe/releases) for updates. What works today:
 
 - Everything described above is implemented in the Rust/Tauri app and covered by about 200
   automated tests (parsers and protocol decoders fed with fixtures from all three OS, network
   techniques against loopback test servers, engine concurrency and cancellation).
-- CI builds, lints and tests the workspace on macOS, Windows and Linux.
+- CI builds, lints, tests and packages the workspace on macOS, Windows and Linux. Windows x64
+  installers were tested successfully; Linux packages remain test artifacts.
 
 What is missing or known to be rough:
 
@@ -283,6 +290,7 @@ people who work backstage and those who keep their lab running.
 | <img src=".github/assets/brand/patchprobe-mark-128.png" alt="" width="64"> | **PatchProbe** | Fast network scanner for macOS, Windows & Linux | *you are here* |
 | <img src=".github/assets/brand/patchtime-mark-128.png" alt="" width="64"> | **PatchTime** | Overtime and work summaries | [Code](https://github.com/Patchbay-s/PatchTime) |
 | <img src=".github/assets/brand/patchnode-mark-128.png" alt="" width="64"> | **PatchNode** | iPhone, iPad & Mac dashboard for your homelab | [Code](https://github.com/Patchbay-s/PatchNode) |
+| **PatchPad** | Game controller tester for macOS, Windows & Linux | [Code](https://github.com/Patchbay-s/PatchPad) |
 
 ## Responsible use
 
