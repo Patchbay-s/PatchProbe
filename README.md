@@ -168,7 +168,7 @@ Everything runs locally: no account, no cloud, no telemetry.
 
 | Build | File | Notes |
 |---|---|---|
-| App, Apple silicon (arm64) | [`PatchProbe_1.0.0_aarch64.dmg`](https://github.com/Patchbay-s/PatchProbe/releases/download/v1.0.0/PatchProbe_1.0.0_aarch64.dmg) | Signed and notarized, all features |
+| App, Apple silicon (arm64) | [`PatchProbe_1.0.0_macos-aarch64.dmg`](https://github.com/Patchbay-s/PatchProbe/releases/download/v1.0.0/PatchProbe_1.0.0_macos-aarch64.dmg) | Signed and notarized, all features |
 | Mac App Store | Coming soon | Sandboxed edition: no MAC addresses, vendors, traceroute or nmap |
 | App, universal (Apple silicon + Intel) | `PatchProbe_<ver>_universal.dmg` | Coming soon |
 
