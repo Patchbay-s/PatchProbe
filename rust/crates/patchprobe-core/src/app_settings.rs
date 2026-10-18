@@ -20,6 +20,8 @@ pub struct AppSettings {
     pub recent_ranges: Vec<String>,
     pub hide_down_hosts: bool,
     pub grouping: GroupingOption,
+    /// Terminal utilisé pour SSH : `auto` (terminal par défaut du système) ou un identifiant.
+    pub ssh_terminal: String,
 }
 
 impl Default for AppSettings {
@@ -31,6 +33,7 @@ impl Default for AppSettings {
             recent_ranges: Vec::new(),
             hide_down_hosts: true,
             grouping: GroupingOption::None,
+            ssh_terminal: "auto".to_owned(),
         }
     }
 }
@@ -54,6 +57,12 @@ impl AppSettings {
     pub fn sanitized(mut self) -> Self {
         self.scan = self.scan.sanitized();
         self.recent_ranges.truncate(MAX_RECENT_RANGES);
+        let valid = !self.ssh_terminal.is_empty()
+            && self.ssh_terminal.len() <= 32
+            && self.ssh_terminal.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-');
+        if !valid {
+            self.ssh_terminal = "auto".to_owned();
+        }
         self
     }
 }
@@ -87,5 +96,14 @@ mod tests {
         assert!(!partial.hide_down_hosts);
         assert_eq!(partial.scan, ScanSettings::approfondi());
         assert_eq!(s.ports_input, "445,139,2049,5000,5001");
+        assert_eq!(partial.ssh_terminal, "auto");
+    }
+
+    #[test]
+    fn invalid_ssh_terminal_falls_back_to_auto() {
+        let mut s = AppSettings { ssh_terminal: "x; calc".into(), ..AppSettings::default() };
+        assert_eq!(s.clone().sanitized().ssh_terminal, "auto");
+        s.ssh_terminal = "iterm".into();
+        assert_eq!(s.sanitized().ssh_terminal, "iterm");
     }
 }

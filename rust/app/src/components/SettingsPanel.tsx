@@ -7,6 +7,7 @@ interface Props {
   settings: AppSettings;
   portPresets: PortPresetInfo[];
   dataDir: string;
+  os: string;
   onSave: (settings: AppSettings) => Promise<void>;
   onTimingPreset: (preset: TimingPreset) => Promise<void>;
   onPortPreset: (kind: PortPresetKind) => Promise<void>;
@@ -31,8 +32,30 @@ const NUMERIC_FIELDS: { key: NumericKey; label: string; unit: string; min: numbe
   { key: "maxParallelNameResolutions", label: "Résolutions de nom en parallèle", unit: "", min: 1, max: 512 },
 ];
 
-export function SettingsPanel({ settings, portPresets, dataDir, onSave, onTimingPreset, onPortPreset, onClearCache, onClose }: Props) {
+const SSH_TERMINALS: Record<string, { id: string; label: string }[]> = {
+  macos: [
+    { id: "auto", label: "Automatique (application ssh:// par défaut du Mac, Terminal)" },
+    { id: "terminal", label: "Terminal" },
+    { id: "iterm", label: "iTerm2" },
+  ],
+  windows: [
+    { id: "auto", label: "Automatique (Windows Terminal s'il est installé, sinon invite de commandes)" },
+    { id: "wt", label: "Windows Terminal" },
+    { id: "powershell", label: "PowerShell" },
+    { id: "cmd", label: "Invite de commandes" },
+  ],
+  linux: [
+    { id: "auto", label: "Automatique (premier terminal trouvé)" },
+    { id: "gnome-terminal", label: "GNOME Terminal" },
+    { id: "konsole", label: "Konsole" },
+    { id: "xfce4-terminal", label: "Xfce Terminal" },
+    { id: "xterm", label: "xterm" },
+  ],
+};
+
+export function SettingsPanel({ settings, portPresets, dataDir, os, onSave, onTimingPreset, onPortPreset, onClearCache, onClose }: Props) {
   const [draft, setDraft] = useState<ScanSettings>(settings.scan);
+  const terminals = SSH_TERMINALS[os] ?? SSH_TERMINALS.linux;
   const setNumber = (key: NumericKey, value: string) => {
     const parsed = Number.parseInt(value, 10);
     if (!Number.isNaN(parsed)) setDraft({ ...draft, [key]: parsed });
@@ -116,6 +139,26 @@ export function SettingsPanel({ settings, portPresets, dataDir, onSave, onTiming
         <button className="primary" onClick={() => onSave({ ...settings, scan: draft })}>
           Enregistrer les réglages
         </button>
+      </section>
+
+      <section className="settings-section">
+        <h3>Terminal SSH</h3>
+        <div className="settings-grid">
+          <label className="wide">
+            <span>Ouvrir SSH avec</span>
+            <select
+              value={terminals.some((t) => t.id === settings.sshTerminal) ? settings.sshTerminal : "auto"}
+              onChange={(e) => onSave({ ...settings, sshTerminal: e.target.value })}
+            >
+              {terminals.map((terminal) => (
+                <option key={terminal.id} value={terminal.id}>
+                  {terminal.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <p className="hint">Appliqué immédiatement au prochain clic sur « SSH » dans la fiche d'un hôte.</p>
       </section>
 
       <section className="settings-section">

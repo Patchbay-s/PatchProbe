@@ -169,6 +169,19 @@ pub fn open_host(
 }
 
 #[tauri::command]
+pub fn open_ssh(state: State<'_, AppState>, ip: String, user: Option<String>, port: Option<u16>) -> CmdResult<()> {
+    let ip = parse_ip(&ip)?;
+    let terminal = state.settings.get().ssh_terminal;
+    state.platform.open_ssh(ip, user.as_deref(), port.unwrap_or(22), &terminal).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn open_ftp(state: State<'_, AppState>, ip: String, port: Option<u16>) -> CmdResult<()> {
+    let ip = parse_ip(&ip)?;
+    state.platform.open_ftp(ip, port.unwrap_or(21)).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub fn get_name_trace(state: State<'_, AppState>, ip: String) -> CmdResult<Option<NameTrace>> {
     let ip = parse_ip(&ip)?;
     state.with_current(|c| c.traces.get(&ip).cloned())

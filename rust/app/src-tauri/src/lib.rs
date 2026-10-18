@@ -26,6 +26,8 @@ pub fn run() {
             commands::ping_host,
             commands::open_url,
             commands::open_host,
+            commands::open_ssh,
+            commands::open_ftp,
             commands::get_name_trace,
             commands::diagnose_name,
             commands::run_nmap,

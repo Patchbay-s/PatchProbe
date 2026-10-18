@@ -134,6 +134,7 @@ export function HostDetail({ host, annotation, nmapAvailable, nmapHint, tracerou
   const ip = host.ip;
   const [note, setNote] = useState(annotation?.note ?? "");
   const [vendorInput, setVendorInput] = useState(host.vendorOverridden ? host.vendor ?? "" : "");
+  const [sshUser, setSshUser] = useState("");
   const [scanTrace, setScanTrace] = useState<NameTrace | null>(null);
   const noteTimer = useRef<number | undefined>(undefined);
 
@@ -180,6 +181,8 @@ export function HostDetail({ host, annotation, nmapAvailable, nmapHint, tracerou
   };
 
   const open = (port?: number, scheme?: "http" | "https") => api.openHost(ip, port, scheme).catch((e) => notify("error", errorMessage(e)));
+  const openSsh = () => api.openSsh(ip, sshUser).catch((e) => notify("error", errorMessage(e)));
+  const openFtp = () => api.openFtp(ip).catch((e) => notify("error", errorMessage(e)));
 
   return (
     <aside className="detail" aria-label={`Détail de ${ip}`}>
@@ -237,6 +240,26 @@ export function HostDetail({ host, annotation, nmapAvailable, nmapHint, tracerou
             </button>
           ))}
         </div>
+
+        <Section title="Connexion SSH et FTP">
+          <div className="inline-form">
+            <input
+              value={sshUser}
+              onChange={(e) => setSshUser(e.target.value)}
+              placeholder="Utilisateur SSH (optionnel)"
+              aria-label="Utilisateur SSH"
+              autoCapitalize="off"
+              spellCheck={false}
+            />
+            <button onClick={openSsh} title={`Ouvre un terminal : ssh ${sshUser.trim() ? `${sshUser.trim()}@` : ""}${ip}`}>
+              SSH{host.openPorts.includes(22) ? "" : " (port 22 non détecté)"}
+            </button>
+            <button onClick={openFtp} title={`Ouvre ftp://${ip}`}>
+              FTP{host.openPorts.includes(21) ? "" : " (port 21 non détecté)"}
+            </button>
+          </div>
+          <p className="hint">Le mot de passe est demandé par le terminal ou le client FTP du système, jamais enregistré par PatchProbe.</p>
+        </Section>
 
         <Section title="Favori et note">
           <label className="checkbox">

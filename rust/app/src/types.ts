@@ -55,6 +55,7 @@ export interface AppSettings {
   recentRanges: string[];
   hideDownHosts: boolean;
   grouping: GroupingOption;
+  sshTerminal: string;
 }
 
 export interface InterfaceInfo {

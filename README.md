@@ -131,6 +131,11 @@ Everything runs locally: no account, no cloud, no telemetry.
 - **SNMP system walk**: description, uptime, contact, name, location, number of interfaces.
 - **Traceroute** (`traceroute`, `tracepath` or `tracert`), hop by hop.
 - **Favorites and free notes** per IP address.
+- **SSH and FTP shortcuts**: open `ssh [user@]host` in a terminal or `ftp://host` in the system's
+  FTP client. The SSH terminal is the system default (`ssh://` handler on macOS, Windows Terminal
+  or Command Prompt on Windows, first available terminal on Linux) and can be changed in Settings.
+  PatchProbe never stores or sends passwords; the terminal or FTP client asks for them.
+- **Wake-on-LAN** magic packet for hosts whose MAC address is known.
 
 ## History and site profiles
 

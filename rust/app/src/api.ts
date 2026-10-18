@@ -35,6 +35,9 @@ export const api = {
   openUrl: (url: string) => invoke<void>("open_url", { url }),
   openHost: (ip: string, port?: number, scheme?: "http" | "https") =>
     invoke<string>("open_host", { ip, port: port ?? null, scheme: scheme ?? null }),
+  openSsh: (ip: string, user: string, port?: number) =>
+    invoke<void>("open_ssh", { ip, user: user.trim() || null, port: port ?? null }),
+  openFtp: (ip: string, port?: number) => invoke<void>("open_ftp", { ip, port: port ?? null }),
   getNameTrace: (ip: string) => invoke<NameTrace | null>("get_name_trace", { ip }),
   diagnoseName: (ip: string) => invoke<NameTrace>("diagnose_name", { ip }),
   runNmap: (ip: string) => invoke<NmapResult>("run_nmap", { ip }),

@@ -70,6 +70,13 @@ pub trait Platform: SystemProbe {
     /// Ouvre une URL http(s) dans le navigateur par défaut.
     fn open_url(&self, url: &str) -> Result<(), PlatformError>;
 
+    /// Ouvre un terminal sur `ssh [utilisateur@]ip [-p port]`. `terminal` vaut `auto` (terminal
+    /// par défaut du système) ou l'identifiant choisi dans les réglages.
+    fn open_ssh(&self, ip: Ipv4Addr, user: Option<&str>, port: u16, terminal: &str) -> Result<(), PlatformError>;
+
+    /// Ouvre `ftp://ip[:port]` avec l'application FTP par défaut du système.
+    fn open_ftp(&self, ip: Ipv4Addr, port: u16) -> Result<(), PlatformError>;
+
     // --- Hors périmètre de la première version : signatures seulement. ---
 
     async fn ipv4_config(&self, _service: &str) -> Result<Ipv4Config, PlatformError> {
@@ -100,6 +107,57 @@ pub fn validate_url(url: &str) -> Result<&str, PlatformError> {
     } else {
         Err(PlatformError::InvalidUrl(url.to_owned()))
     }
+}
+
+/// Nom d'utilisateur SSH accepté : pas de `-` initial (injection d'option) ni de caractère
+/// spécial, puisqu'il est transmis à un terminal.
+pub fn validate_ssh_user(user: &str) -> Result<&str, PlatformError> {
+    let ok = !user.is_empty()
+        && user.len() <= 32
+        && !user.starts_with(['-', '.'])
+        && user.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'));
+    if ok {
+        Ok(user)
+    } else {
+        Err(PlatformError::Failed(format!("Nom d'utilisateur SSH refusé : « {user} »")))
+    }
+}
+
+/// Arguments de `ssh` pour une cible validée (`-p` seulement hors port 22).
+pub fn ssh_args(ip: Ipv4Addr, user: Option<&str>, port: u16) -> Result<Vec<String>, PlatformError> {
+    if port == 0 {
+        return Err(PlatformError::Failed("Port SSH invalide.".into()));
+    }
+    let target = match user.map(str::trim).filter(|u| !u.is_empty()) {
+        Some(user) => format!("{}@{ip}", validate_ssh_user(user)?),
+        None => ip.to_string(),
+    };
+    let mut args = vec!["ssh".to_owned()];
+    if port != 22 {
+        args.push("-p".into());
+        args.push(port.to_string());
+    }
+    args.push(target);
+    Ok(args)
+}
+
+/// URL FTP construite uniquement à partir d'une IPv4 et d'un port.
+pub fn ftp_url(ip: Ipv4Addr, port: u16) -> Result<String, PlatformError> {
+    if port == 0 {
+        return Err(PlatformError::Failed("Port FTP invalide.".into()));
+    }
+    Ok(if port == 21 { format!("ftp://{ip}") } else { format!("ftp://{ip}:{port}") })
+}
+
+fn spawn_detached(program: &str, args: &[&str]) -> Result<(), PlatformError> {
+    std::process::Command::new(program)
+        .args(args)
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| PlatformError::Failed(format!("impossible de lancer {program} : {e}")))
 }
 
 /// Implémentation pour l'OS de compilation.
@@ -237,23 +295,133 @@ impl Platform for SystemPlatform {
     }
 
     fn open_url(&self, url: &str) -> Result<(), PlatformError> {
-        let url = validate_url(url)?;
-        let (program, args): (&str, Vec<&str>) = if cfg!(target_os = "windows") {
-            // Pas de `cmd /c start` : `&` serait interprété par cmd.exe.
-            ("rundll32", vec!["url.dll,FileProtocolHandler", url])
+        open_with_system(validate_url(url)?)
+    }
+
+    fn open_ftp(&self, ip: Ipv4Addr, port: u16) -> Result<(), PlatformError> {
+        open_with_system(&ftp_url(ip, port)?)
+    }
+
+    fn open_ssh(&self, ip: Ipv4Addr, user: Option<&str>, port: u16, terminal: &str) -> Result<(), PlatformError> {
+        let args = ssh_args(ip, user, port)?;
+        let args: Vec<&str> = args.iter().map(String::as_str).collect();
+        // Les arguments sont validés (lettres, chiffres, `.`, `_`, `-`, `@`, `:`) : aucun
+        // métacaractère de shell ou d'AppleScript ne peut y figurer.
+        if cfg!(target_os = "windows") {
+            open_ssh_windows(&args, terminal)
         } else if cfg!(target_os = "macos") {
-            ("open", vec![url])
+            open_ssh_macos(&args, terminal)
         } else {
-            ("xdg-open", vec![url])
-        };
-        let mut cmd = std::process::Command::new(program);
-        cmd.args(args)
-            .stdin(std::process::Stdio::null())
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null());
-        cmd.spawn()
-            .map(|_| ())
-            .map_err(|e| PlatformError::Failed(format!("impossible d'ouvrir le navigateur ({program}) : {e}")))
+            open_ssh_linux(&args, terminal)
+        }
+    }
+}
+
+fn unknown_terminal(terminal: &str) -> PlatformError {
+    PlatformError::Failed(format!("Terminal inconnu : « {terminal} »"))
+}
+
+/// Windows : Windows Terminal (terminal par défaut de Windows 11) s'il est installé, sinon
+/// l'invite de commandes. Le terminal choisi dans les réglages prime.
+fn open_ssh_windows(args: &[&str], terminal: &str) -> Result<(), PlatformError> {
+    let wt =
+        || find_executable("wt", &[]).ok_or_else(|| PlatformError::Failed("Windows Terminal est introuvable.".into()));
+    match terminal {
+        "auto" if find_executable("wt", &[]).is_some() => spawn_detached("wt", args),
+        "auto" | "cmd" => {
+            let mut command = vec!["/k"];
+            command.extend_from_slice(args);
+            spawn_in_new_console("cmd", &command)
+        }
+        "wt" => wt().and_then(|_| spawn_detached("wt", args)),
+        "powershell" => {
+            let mut command = vec!["-NoExit", "-Command"];
+            command.extend_from_slice(args);
+            spawn_in_new_console("powershell", &command)
+        }
+        other => Err(unknown_terminal(other)),
+    }
+}
+
+/// macOS : l'app associée au schéma `ssh://` (Terminal par défaut, ou celle choisie par
+/// l'utilisateur dans Réglages Système), sauf choix explicite dans les réglages.
+fn open_ssh_macos(args: &[&str], terminal: &str) -> Result<(), PlatformError> {
+    let command = args.join(" ");
+    match terminal {
+        "auto" => {
+            let target = args.last().copied().unwrap_or_default();
+            let port = args.windows(2).find(|pair| pair[0] == "-p").map(|pair| pair[1]);
+            let url = match port {
+                Some(port) => format!("ssh://{target}:{port}"),
+                None => format!("ssh://{target}"),
+            };
+            spawn_detached("open", &[&url])
+        }
+        "terminal" => spawn_detached(
+            "osascript",
+            &["-e", &format!("tell application \"Terminal\"\nactivate\ndo script \"{command}\"\nend tell")],
+        ),
+        "iterm" => spawn_detached(
+            "osascript",
+            &[
+                "-e",
+                &format!(
+                    "tell application \"iTerm\"\nactivate\ncreate window with default profile command \"{command}\"\nend tell"
+                ),
+            ],
+        ),
+        other => Err(unknown_terminal(other)),
+    }
+}
+
+fn open_ssh_linux(args: &[&str], terminal: &str) -> Result<(), PlatformError> {
+    let terminals: [(&str, &[&str]); 5] = [
+        ("x-terminal-emulator", &["-e"]),
+        ("gnome-terminal", &["--"]),
+        ("konsole", &["-e"]),
+        ("xfce4-terminal", &["-x"]),
+        ("xterm", &["-e"]),
+    ];
+    if terminal != "auto" && !terminals.iter().any(|(name, _)| *name == terminal) {
+        return Err(unknown_terminal(terminal));
+    }
+    for (name, prefix) in terminals {
+        if (terminal != "auto" && terminal != name) || find_executable(name, SBIN_DIRS).is_none() {
+            continue;
+        }
+        let mut command: Vec<&str> = prefix.to_vec();
+        command.extend_from_slice(args);
+        return spawn_detached(name, &command);
+    }
+    Err(PlatformError::Failed("terminal introuvable pour lancer ssh".into()))
+}
+
+/// Lance un programme console dans sa propre fenêtre (sans passer par `cmd /c start`).
+#[cfg(windows)]
+fn spawn_in_new_console(program: &str, args: &[&str]) -> Result<(), PlatformError> {
+    use std::os::windows::process::CommandExt;
+    const CREATE_NEW_CONSOLE: u32 = 0x0000_0010;
+    std::process::Command::new(program)
+        .args(args)
+        .creation_flags(CREATE_NEW_CONSOLE)
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| PlatformError::Failed(format!("impossible de lancer {program} : {e}")))
+}
+
+#[cfg(not(windows))]
+fn spawn_in_new_console(program: &str, args: &[&str]) -> Result<(), PlatformError> {
+    spawn_detached(program, args)
+}
+
+fn open_with_system(url: &str) -> Result<(), PlatformError> {
+    if cfg!(target_os = "windows") {
+        // Pas de `cmd /c start` : `&` serait interprété par cmd.exe.
+        spawn_detached("rundll32", &["url.dll,FileProtocolHandler", url])
+    } else if cfg!(target_os = "macos") {
+        spawn_detached("open", &[url])
+    } else {
+        spawn_detached("xdg-open", &[url])
     }
 }
 
@@ -270,6 +438,26 @@ mod tests {
         {
             assert!(validate_url(bad).is_err(), "{bad:?}");
         }
+    }
+
+    #[test]
+    fn ssh_arguments_are_validated() {
+        let ip = Ipv4Addr::new(192, 0, 2, 10);
+        assert_eq!(ssh_args(ip, None, 22).unwrap(), ["ssh", "192.0.2.10"]);
+        assert_eq!(ssh_args(ip, Some(" admin "), 2222).unwrap(), ["ssh", "-p", "2222", "admin@192.0.2.10"]);
+        assert_eq!(ssh_args(ip, Some(""), 22).unwrap(), ["ssh", "192.0.2.10"]);
+        for bad in ["-oProxyCommand=calc", "a b", "a;b", "a&b", "a\"b", "a$(x)", ".hidden", "é", &"x".repeat(33)] {
+            assert!(ssh_args(ip, Some(bad), 22).is_err(), "{bad:?}");
+        }
+        assert!(ssh_args(ip, None, 0).is_err());
+    }
+
+    #[test]
+    fn ftp_url_is_built_from_ip_and_port() {
+        let ip = Ipv4Addr::new(192, 0, 2, 10);
+        assert_eq!(ftp_url(ip, 21).unwrap(), "ftp://192.0.2.10");
+        assert_eq!(ftp_url(ip, 2121).unwrap(), "ftp://192.0.2.10:2121");
+        assert!(ftp_url(ip, 0).is_err());
     }
 
     #[test]

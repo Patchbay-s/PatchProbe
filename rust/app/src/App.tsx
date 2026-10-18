@@ -323,6 +323,7 @@ export default function App() {
           settings={settings}
           portPresets={boot.portPresets}
           dataDir={boot.dataDir}
+          os={boot.os}
           onSave={saveSettings}
           onTimingPreset={applyTimingPreset}
           onPortPreset={applyPortPreset}
